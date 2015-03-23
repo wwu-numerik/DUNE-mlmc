@@ -4,11 +4,37 @@
 
 #include <dune/mlmc/msfem.hh>
 #include <dune/mlmc/mlmc.hh>
+#include <dune/multiscale/common/main_init.hh>
 
 #include <dune/stuff/common/profiler.hh>
 #include <dune/stuff/common/configuration.hh>
 
-#if 0  // calcflux fehlt
+int main(int argc, char** argv) {
+  using namespace MultiLevelMonteCarlo;
+  try {
+    msfem_init(argc, argv);
+
+    MsFemSingleDifference msfem_single;
+    MsCgFemDifference ms_cg_fem_diff;
+    MultiLevelMonteCarlo::MLMC mlmc;
+    const auto msfem_procs = 1;
+    mlmc.addDifference(msfem_single, msfem_procs);
+    mlmc.addDifference(ms_cg_fem_diff, msfem_procs);
+    const auto tolerance = DSC_CONFIG_GET("mlmc.tolerance", 0.1f);
+    const auto breaks = DSC_CONFIG_GET("mlmc.breaks", 2u);
+    const auto value = mlmc.expectation(tolerance, breaks);
+    DSC_LOG_INFO_0 << "\nExpected " << value << std::endl;
+    DSC_PROFILER.outputTimings("profiler");
+    Dune::Multiscale::mem_usage();
+  } catch (Dune::Exception& e) {
+    return Dune::Multiscale::handle_exception(e);
+  } catch (std::exception& s) {
+    return Dune::Multiscale::handle_exception(s);
+  }
+  return 0;
+}
+
+#if 0  // example code only
 int run(int argc, char **argv) {
   Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
   if (argc!=10) {
@@ -25,8 +51,8 @@ int run(int argc, char **argv) {
   const auto pSlow   = DSC_CONFIG_GET("mlmc.pSlow", 3u);
   const auto log2seg = DSC_CONFIG_GET("mlmc.log2seg", 2u);
   const auto overlap = DSC_CONFIG_GET("mlmc.overlap", 1u);
-  const auto corrLen = DSC_CONFIG_GET("mlmc.corrLen", 0.1f);
-  const auto sigma   = DSC_CONFIG_GET("mlmc.sigma", 0.02f);
+  const auto corrLen = DSC_CONFIG_GET("mlmc.corrLen", 0.2f);
+  const auto sigma   = DSC_CONFIG_GET("mlmc.sigma", 1.0f);
   const auto tol     = DSC_CONFIG_GET("mlmc.tol", 0.03f);
   const auto breaks  = DSC_CONFIG_GET("mlmc.breaks", 4u);
 
@@ -51,26 +77,4 @@ int run(int argc, char **argv) {
   DSC_LOG_INFO_0 << "Expected value: " << mean
                  << " Time: " << t << "\n";
 }
-#endif // 0 //calcflux fehlt
-
-int main(int argc, char** argv) {
-  using namespace Dune;
-  using namespace std;
-  using namespace MultiLevelMonteCarlo;
-  try {
-    msfem_init(argc, argv);
-
-    MsFemDifference msfem_diff;
-    MultiLevelMonteCarlo::MLMC mlmc;
-    mlmc.addDifference(msfem_diff, 1);
-    const auto tolerance = DSC_CONFIG_GET("mlmc.tolerance", 0.1f);
-    const auto breaks = DSC_CONFIG_GET("mlmc.breaks", 2u);
-    const auto value = mlmc.expectation(tolerance, breaks);
-    DSC_LOG_INFO_0 << "\nExpected " << value << std::endl;
-
-  } catch (Dune::Exception& e) {
-    std::cerr << "Dune reported error: " << e << std::endl;
-  } catch (...) {
-    std::cerr << "Unknown exception thrown!" << std::endl;
-  }
-}
+#endif // 0 example code only

@@ -312,6 +312,6 @@ public:
 private:
   std::vector<Level> _level; ///< vector of levels
 };
-}
+} // namespace MultiLevelMonteCarlo {
 
 #endif
