@@ -1,6 +1,6 @@
 #include <config.h>
 
-#include <dune/common/exceptions.hh>         // We use exceptions
+#include <dune/common/exceptions.hh> // We use exceptions
 
 #include <dune/mlmc/msfem.hh>
 #include <dune/mlmc/mlmc.hh>
@@ -8,8 +8,7 @@
 #include <dune/stuff/common/profiler.hh>
 #include <dune/stuff/common/configuration.hh>
 
-
-#if 0 //calcflux fehlt
+#if 0  // calcflux fehlt
 int run(int argc, char **argv) {
   Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
   if (argc!=10) {
@@ -54,9 +53,9 @@ int run(int argc, char **argv) {
               << " Time: " << t << "\n";
   }
 }
-#endif //0 //calcflux fehlt
+#endif // 0 //calcflux fehlt
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   using namespace Dune;
   using namespace std;
   using namespace MultiLevelMonteCarlo;
@@ -71,8 +70,7 @@ int main(int argc, char **argv) {
     const auto value = mlmc.expectation(tolerance, breaks);
     DSC_LOG_INFO_0 << "Expected " << value << std::endl;
 
-
-  } catch (Dune::Exception &e) {
+  } catch (Dune::Exception& e) {
     std::cerr << "Dune reported error: " << e << std::endl;
   } catch (...) {
     std::cerr << "Unknown exception thrown!" << std::endl;

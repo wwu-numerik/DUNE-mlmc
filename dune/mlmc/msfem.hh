@@ -16,20 +16,15 @@ public:
   /// \param local   communicator of processors involved in this solution
   virtual void init(MPI_Comm global, MPI_Comm local);
 
-  double compute_inflow_difference(
-      const Dune::Multiscale::CommonTraits::GridType &grid,
-      const Dune::Multiscale::CommonTraits::DiscreteFunctionType &
-          coarse_function,
-      const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType &
-          fine_function);
+  double compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& grid,
+                                   const Dune::Multiscale::CommonTraits::DiscreteFunctionType& coarse_function,
+                                   const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType& fine_function);
 
   /// Evaluate difference of solutions on subsequent levels.
   virtual double eval();
-
 };
 
-void msfem_init(int argc, char **argv);
-
+void msfem_init(int argc, char** argv);
 }
 
 #endif // DUNE_MLMC_MSFEM_HH
