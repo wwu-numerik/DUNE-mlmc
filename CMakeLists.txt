@@ -32,7 +32,7 @@ FILE( GLOB_RECURSE local_dune "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
 set( COMMON_HEADER ${local_header} ${local_dune} ${DUNE_HEADERS} )
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
-add_executable("dune_mlmc" src/dune_mlmc.cc)
+add_executable("dune_mlmc" src/dune_mlmc.cc dune/mlmc/msfem.cc)
 target_link_dune_default_libraries("dune_mlmc")
 target_link_libraries(dune_mlmc fftw3_mpi ${FFTW_LIBRARIES})
 foreach(target dune_mlmc)
