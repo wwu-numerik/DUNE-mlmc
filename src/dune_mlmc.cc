@@ -20,15 +20,15 @@ int run(int argc, char **argv) {
   }
 
   // Read parameters
-  pFast   = atoi(argv[1]);
-  pMedium = atoi(argv[2]);
-  pSlow   = atoi(argv[3]);
-  log2seg = atoi(argv[4]);
-  overlap = atoi(argv[5]);
-  corrLen = atof(argv[6]);
-  sigma   = atof(argv[7]);
-  tol     = atof(argv[8]);
-  breaks  = atoi(argv[9]);
+  const auto pFast   = DSC_CONFIG_GET("mlmc.pFast", 1u);
+  const auto pMedium = DSC_CONFIG_GET("mlmc.pMedium", 2u);
+  const auto pSlow   = DSC_CONFIG_GET("mlmc.pSlow", 3u);
+  const auto log2seg = DSC_CONFIG_GET("mlmc.log2seg", 2u);
+  const auto overlap = DSC_CONFIG_GET("mlmc.overlap", 1u);
+  const auto corrLen = DSC_CONFIG_GET("mlmc.corrLen", 0.1f);
+  const auto sigma   = DSC_CONFIG_GET("mlmc.sigma", 0.02f);
+  const auto tol     = DSC_CONFIG_GET("mlmc.tol", 0.03f);
+  const auto breaks  = DSC_CONFIG_GET("mlmc.breaks", 4u);
 
 
   // Multi level Monte Carlo estimator
@@ -48,10 +48,8 @@ int run(int argc, char **argv) {
   double t = MPI_Wtime();
   double mean = mlmc.expectation(tol,breaks,MPI_COMM_WORLD);
   t = MPI_Wtime() - t;
-  if(helper.rank()==0) {
-    std::cout << "Expected value: " << mean
-              << " Time: " << t << "\n";
-  }
+  DSC_LOG_INFO_0 << "Expected value: " << mean
+                 << " Time: " << t << "\n";
 }
 #endif // 0 //calcflux fehlt
 
@@ -68,7 +66,7 @@ int main(int argc, char** argv) {
     const auto tolerance = DSC_CONFIG_GET("mlmc.tolerance", 0.1f);
     const auto breaks = DSC_CONFIG_GET("mlmc.breaks", 2u);
     const auto value = mlmc.expectation(tolerance, breaks);
-    DSC_LOG_INFO_0 << "Expected " << value << std::endl;
+    DSC_LOG_INFO_0 << "\nExpected " << value << std::endl;
 
   } catch (Dune::Exception& e) {
     std::cerr << "Dune reported error: " << e << std::endl;
