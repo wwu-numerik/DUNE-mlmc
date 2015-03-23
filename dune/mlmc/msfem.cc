@@ -21,61 +21,117 @@
 #include <dune/stuff/grid/walker/functors.hh>
 #include <dune/stuff/grid/walker/apply-on.hh>
 #include <dune/stuff/common/profiler.hh>
+#include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/configuration.hh>
+
+#include <dune/gdt/products/h1.hh>
+#include <dune/gdt/products/weightedl2.hh>
+#include <dune/gdt/products/boundaryl2.hh>
 
 #include <boost/filesystem.hpp>
 
 
-void MultiLevelMonteCarlo::MsFemDifference::init(MPI_Comm global, MPI_Comm local) {
+double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
+                    const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType& solution) {
+  using namespace Dune::Multiscale;
+  const auto gv = grid.leafGridView();
+  typedef decltype(gv) ViewType;
+
+  // Constants and types
+  constexpr auto dim = CommonTraits::world_dim;
+  typedef double REAL; //TODO read from input
+  typedef typename Dune::FieldVector<REAL,dim> FV;   // point on cell
+  typedef typename Dune::FieldMatrix<REAL,dim,dim> FM;   // point on cell
+  typedef typename Dune::FieldMatrix<REAL,1,dim> Grad;   // point on cell
+  typedef typename Dune::QuadratureRule<REAL,dim-1> QR;
+  typedef typename Dune::QuadratureRules<REAL,dim-1> QRS;
+
+  const auto& diffusion = DMP::getDiffusion();
+
+  // Quadrature rule
+  auto iCell = gv.template begin< 0,Dune::Interior_Partition >();
+  auto iFace = gv.ibegin(*iCell);
+  const QR& rule = QRS::rule(iFace->geometry().type(),2); // TODO order as para
+
+  // Loop over cells
+  REAL localFlux(0);
+  for(iCell = gv.template begin< 0,Dune::Interior_Partition >();
+      iCell != gv.template end< 0,Dune::Interior_Partition >(); ++iCell) {
+    // Loop over interfaces
+    const auto local_solution = solution.local_function(*iCell);
+    for(iFace = gv.ibegin(*iCell); iFace != gv.iend(*iCell); ++iFace) {
+      if(iFace->boundary() && iFace->geometry().center()[0]==0) {
+        double area = iFace->geometry().volume();
+        // Loop over gauss points
+        for(auto iGauss = rule.begin(); iGauss != rule.end(); ++iGauss) {
+          FV pos = iFace->geometry().global(iGauss->position());
+          Grad grad;
+          FM diff;
+          diffusion.evaluate(pos, diff);
+          local_solution->jacobian(pos, grad);
+          localFlux -= iGauss->weight() * area * diff[0][0] * grad[0][0];
+        }
+      }
+    }
+  }
+  return localFlux;
+}
+
+void MultiLevelMonteCarlo::MsCgFemDifference::init(MPI_Comm global, MPI_Comm local) {
   // inits perm field only, no create()
   DMP::getMutableModelData().problem_init(global, local);
 }
 
-double MultiLevelMonteCarlo::MsFemDifference::compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType &grid, const Dune::Multiscale::CommonTraits::DiscreteFunctionType &coarse_function, const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType &fine_function) {
-  using namespace Dune::Multiscale;
-  auto view = grid.leafGridView();
-  typedef decltype(view) ViewType;
-  typedef typename DSG::Intersection<ViewType>::Type IntersectionType;
-
-  const auto only_on_left_plane =
-      [=](const ViewType &, const IntersectionType &it) {
-    return it.boundary() && DSC::FloatCmp::eq(it.geometry().center()[0], 0.);
-  };
-  Dune::GDT::Products::BoundaryL2<ViewType> product(view, only_on_left_plane);
-  const auto coarse_flow = product.apply2(coarse_function, coarse_function);
-  const auto fine_flow = product.apply2(fine_function, fine_function);
-  return fine_flow - coarse_flow;
+double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& fine_grid,
+                                                                          const Dune::Multiscale::LocalsolutionProxy &msfem_solution,
+                                                                          const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType* fine_function) {
+  using namespace Dune;
+  typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType
+      PartViewType;
+  const Multiscale::CommonTraits::SpaceType fine_space(PartViewType::create(
+                                                         fine_grid, Multiscale::CommonTraits::st_gdt_grid_level));
+  Multiscale::CommonTraits::DiscreteFunctionType projected_msfem_solution(
+        fine_space, "MsFEM_Solution");
+  Multiscale::MsFEMProjection::project(
+        msfem_solution, projected_msfem_solution, msfem_solution.search());
+  const auto coarse_flow = surface_flow_gdt(fine_grid, projected_msfem_solution);
+  if(fine_function) {
+    const auto fine_flow = surface_flow_gdt(fine_grid, *fine_function);
+    return fine_flow - coarse_flow;
+  }
+  return coarse_flow;
 }
 
-double MultiLevelMonteCarlo::MsFemDifference::eval() {
+double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
   using namespace Dune;
-
+  DSC::OutputScopedTiming tm("mlmc.difference_cg-msfem", DSC_LOG_INFO_0);
   auto coarse_grid = Multiscale::make_coarse_grid();
   // create() new perm field
   DMP::getMutableModelData().prepare_new_evaluation();
+  auto fine_grid = Multiscale::make_fine_grid(coarse_grid, true);
+
   typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType
       PartViewType;
   const Multiscale::CommonTraits::SpaceType coarse_space(PartViewType::create(
                                                            *coarse_grid, Multiscale::CommonTraits::st_gdt_grid_level));
+
+
   std::unique_ptr<Multiscale::LocalsolutionProxy> msfem_solution(nullptr);
 
   Multiscale::LocalGridList localgrid_list(coarse_space);
+  DSC::profiler().startTiming("mlmc.difference_cg-msfem.msfem-solve");
   Multiscale::Elliptic_MsFEM_Solver().apply(coarse_space, msfem_solution,
                                             localgrid_list);
-  auto fine_grid = Multiscale::make_fine_grid(coarse_grid, true);
-  const Multiscale::CommonTraits::SpaceType fine_space(PartViewType::create(
-                                                         *fine_grid, Multiscale::CommonTraits::st_gdt_grid_level));
+  DSC::profiler().stopTiming("mlmc.difference_cg-msfem.msfem-solve");
+
+  DSC::profiler().startTiming("mlmc.difference_cg-msfem.cgfem-solve");
   Multiscale::Elliptic_FEM_Solver fem(fine_grid);
   const auto &fine_fem_solution = fem.solve();
+  DSC::profiler().stopTiming("mlmc.difference_cg-msfem.cgfem-solve");
 
-  // sollte eigentlich auch ohne den umweg der projection auf das feine gitter
-  // möglich sein
-  Multiscale::CommonTraits::DiscreteFunctionType projected_msfem_solution(
-        fine_space, "MsFEM_Solution");
-  Multiscale::MsFEMProjection::project(
-        *msfem_solution, projected_msfem_solution, msfem_solution->search());
-  return compute_inflow_difference(*fine_grid, projected_msfem_solution,
-                                   fine_fem_solution);
+  DSC::OutputScopedTiming tmd("mlmc.difference_cg-msfem.compute_inflow_difference", DSC_LOG_INFO_0);
+  return compute_inflow_difference(*fine_grid, *msfem_solution,
+                                   &fine_fem_solution);
 }
 
 //! workaround for https://github.com/wwu-numerik/dune-stuff/issues/42
@@ -126,4 +182,29 @@ void MultiLevelMonteCarlo::msfem_init(int argc, char **argv) {
   DSC_CONFIG.set_record_defaults(true);
   DSC_PROFILER.setOutputdir(DSC_CONFIG_GET("global.datadir", "data"));
   DS::threadManager().set_max_threads(DSC_CONFIG_GET("threading.max_count", 1));
+}
+
+
+double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
+  using namespace Dune;
+  DSC::OutputScopedTiming tm("mlmc.single_msfem", DSC_LOG_INFO_0);
+  auto coarse_grid = Multiscale::make_coarse_grid();
+  auto fine_grid = Multiscale::make_fine_grid(coarse_grid, true);
+  // create() new perm field
+  DMP::getMutableModelData().prepare_new_evaluation();
+  typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType
+      PartViewType;
+  const Multiscale::CommonTraits::SpaceType coarse_space(PartViewType::create(
+                                                           *coarse_grid, Multiscale::CommonTraits::st_gdt_grid_level));
+  std::unique_ptr<Multiscale::LocalsolutionProxy> msfem_solution(nullptr);
+
+  Multiscale::LocalGridList localgrid_list(coarse_space);
+  DSC::profiler().startTiming("mlmc.single_msfem.msfem-solve");
+  Multiscale::Elliptic_MsFEM_Solver().apply(coarse_space, msfem_solution,
+                                            localgrid_list);
+  DSC::profiler().stopTiming("mlmc.single_msfem.msfem-solve");
+
+
+  DSC::OutputScopedTiming tmd("mlmc.single_msfem.compute_inflow_difference", DSC_LOG_INFO_0);
+  return compute_inflow_difference(*fine_grid, *msfem_solution);
 }
