@@ -13,7 +13,8 @@ int main(int argc, char** argv) {
   using namespace MultiLevelMonteCarlo;
   try {
     msfem_init(argc, argv);
-
+//    DSC::OutputScopedTiming tm("mlmc.all", DSC_LOG_INFO_0);
+    DSC::ScopedTiming tm("mlmc.all");
     MsFemSingleDifference msfem_single;
     MsCgFemDifference ms_cg_fem_diff;
     MultiLevelMonteCarlo::MLMC mlmc;
@@ -24,13 +25,13 @@ int main(int argc, char** argv) {
     const auto breaks = DSC_CONFIG_GET("mlmc.breaks", 2u);
     const auto value = mlmc.expectation(tolerance, breaks);
     DSC_LOG_INFO_0 << "\nExpected " << value << std::endl;
-    DSC_PROFILER.outputTimings("profiler");
-    Dune::Multiscale::mem_usage();
   } catch (Dune::Exception& e) {
     return Dune::Multiscale::handle_exception(e);
   } catch (std::exception& s) {
     return Dune::Multiscale::handle_exception(s);
   }
+  DSC_PROFILER.outputTimings("profiler");
+  Dune::Multiscale::mem_usage();
   return 0;
 }
 

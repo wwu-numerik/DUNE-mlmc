@@ -24,8 +24,9 @@ public:
   /// \param local   communicator of processors involved in this solution
   virtual void init(MPI_Comm global, MPI_Comm local);
 
-  double compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& fine_grid,
+  double compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
                                    const Dune::Multiscale::LocalsolutionProxy &msfem_solution,
+                                   const std::shared_ptr<Dune::Multiscale::CommonTraits::GridType> fine_grid = nullptr,
                                    const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType* fine_function = nullptr);
 
   /// Evaluate difference of solutions on subsequent levels.
