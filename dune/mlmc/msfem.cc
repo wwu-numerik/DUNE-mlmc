@@ -98,7 +98,7 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
   const auto coarse_flow = surface_flow_gdt(coarse_grid, projected_msfem_solution);
   if(fine_function && fine_grid) {
     const auto fine_flow = surface_flow_gdt(*fine_grid, *fine_function);
-    return fine_flow - coarse_flow;
+    return coarse_flow - fine_flow;
   }
   return coarse_flow;
 }
