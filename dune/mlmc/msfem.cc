@@ -79,8 +79,13 @@ double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
 
 void MultiLevelMonteCarlo::MsCgFemDifference::init(MPI_Comm global, MPI_Comm local) {
   // inits perm field only, no create()
+  if(init_called_)
+    return;
   DMP::getMutableModelData().problem_init(global, local);
+  init_called_ = true;
 }
+
+std::atomic<bool> MultiLevelMonteCarlo::MsCgFemDifference::init_called_ {false};
 
 double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
                                                                           const Dune::Multiscale::LocalsolutionProxy &msfem_solution,

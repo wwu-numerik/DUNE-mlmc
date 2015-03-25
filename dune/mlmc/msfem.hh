@@ -31,6 +31,8 @@ public:
 
   /// Evaluate difference of solutions on subsequent levels.
   virtual double eval();
+private:
+  static std::atomic<bool> init_called_;
 };
 
 class MsFemSingleDifference : public MsCgFemDifference {
