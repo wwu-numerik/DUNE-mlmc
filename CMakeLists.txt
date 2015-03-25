@@ -34,7 +34,8 @@ set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
 add_executable("dune_mlmc" src/dune_mlmc.cc dune/mlmc/msfem.cc)
 target_link_dune_default_libraries("dune_mlmc")
-target_link_libraries(dune_mlmc fftw3_mpi ${FFTW_LIBRARIES})
+target_link_libraries(dune_mlmc ${MULTISCALE_LIBS})
+message(STATUS MULTI ${MULTISCALE_LIBS})
 foreach(target dune_mlmc)
   add_dune_metis_flags(${target})
   add_dune_parmetis_flags(${target})
@@ -46,7 +47,7 @@ foreach(target dune_mlmc)
 endforeach()
 
 #disable most warnings from dependent modules, except gdt,stuff
-list(APPEND module_exceptions "dune-multiscale")
+list(APPEND module_exceptions "dune-gdt" "dune-stuff")
 foreach(_mod ${ALL_DEPENDENCIES})
   list (FIND module_exceptions "${_mod}" _index)
   if (_index LESS 0)
