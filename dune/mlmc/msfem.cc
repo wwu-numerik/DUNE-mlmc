@@ -77,8 +77,9 @@ double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
   return localFlux;
 }
 
-void MultiLevelMonteCarlo::MsCgFemDifference::init(MPI_Comm global, MPI_Comm local) {
+void MultiLevelMonteCarlo::MsCgFemDifference::init(Dune::MPIHelper::MPICommunicator global, Dune::MPIHelper::MPICommunicator local) {
   // inits perm field only, no create()
+  local_comm_ = local;
   if(init_called_)
     return;
   DMP::getMutableModelData().problem_init(global, local);
@@ -111,10 +112,10 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
 double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
   using namespace Dune;
   DSC::OutputScopedTiming tm("mlmc.difference_cg-msfem", DSC_LOG_INFO_0);
-  auto coarse_grid = Multiscale::make_coarse_grid();
+  auto coarse_grid = Multiscale::make_coarse_grid(local_comm_);
   // create() new perm field
   DMP::getMutableModelData().prepare_new_evaluation();
-  auto fine_grid = Multiscale::make_fine_grid(coarse_grid, true);
+  auto fine_grid = Multiscale::make_fine_grid(coarse_grid, true,local_comm_);
 
   typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType
       PartViewType;
@@ -143,7 +144,7 @@ double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
 double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
   using namespace Dune;
   DSC::OutputScopedTiming tm("mlmc.single_msfem", DSC_LOG_INFO_0);
-  auto coarse_grid = Multiscale::make_coarse_grid();
+  auto coarse_grid = Multiscale::make_coarse_grid(local_comm_);
   // create() new perm field
   DMP::getMutableModelData().prepare_new_evaluation();
   typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType

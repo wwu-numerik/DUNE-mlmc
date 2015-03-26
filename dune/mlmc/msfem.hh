@@ -22,7 +22,7 @@ public:
   /// Initialize level.
   /// \param global  global communicator
   /// \param local   communicator of processors involved in this solution
-  virtual void init(MPI_Comm global, MPI_Comm local);
+  virtual void init(Dune::MPIHelper::MPICommunicator global, Dune::MPIHelper::MPICommunicator local);
 
   double compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
                                    const Dune::Multiscale::LocalsolutionProxy &msfem_solution,
@@ -33,6 +33,9 @@ public:
   virtual double eval();
 private:
   static std::atomic<bool> init_called_;
+
+protected:
+  Dune::MPIHelper::MPICommunicator local_comm_;
 };
 
 class MsFemSingleDifference : public MsCgFemDifference {
