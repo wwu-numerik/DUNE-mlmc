@@ -18,9 +18,8 @@ int main(int argc, char** argv) {
     MsFemSingleDifference msfem_single;
     MsCgFemDifference ms_cg_fem_diff;
     MultiLevelMonteCarlo::MLMC mlmc;
-    const auto msfem_procs = 1;
-    mlmc.addDifference(msfem_single, msfem_procs);
-    mlmc.addDifference(ms_cg_fem_diff, msfem_procs);
+    mlmc.addDifference(msfem_single, DSC_CONFIG_GET("mlmc.coarse_ranks", 1u));
+    mlmc.addDifference(ms_cg_fem_diff, DSC_CONFIG_GET("mlmc.fine_ranks", 1u));
     const auto tolerance = DSC_CONFIG_GET("mlmc.tolerance", 0.1f);
     const auto breaks = DSC_CONFIG_GET("mlmc.breaks", 2u);
     const auto value = mlmc.expectation(tolerance, breaks);
