@@ -1,3 +1,8 @@
+// This file is part of the dune-mlmc project:
+//   http://users.dune-project.org/projects/dune-mlmc
+// Copyright Holders: Jan Mohring
+// License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
 #ifndef DUNE_MLMC_DIFFERENCES_HH
 #define DUNE_MLMC_DIFFERENCES_HH
 

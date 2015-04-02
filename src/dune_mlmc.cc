@@ -1,3 +1,8 @@
+// This file is part of the dune-mlmc project:
+//   http://users.dune-project.org/projects/dune-mlmc
+// Copyright Holders: Rene Milk
+// License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
 #include <config.h>
 
 #include <dune/common/exceptions.hh> // We use exceptions
