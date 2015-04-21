@@ -10,7 +10,7 @@
 
 #include <dune/multiscale/common/traits.hh>
 #include <dune/gdt/products/boundaryl2.hh>
-
+#include <dune/multiscale/problems/selector.hh>
 
 namespace Dune {
 namespace Multiscale {
@@ -40,6 +40,7 @@ private:
   static std::atomic<bool> init_called_;
 
 protected:
+  std::unique_ptr<DMP::ProblemContainer> problem_;
   Dune::MPIHelper::MPICommunicator local_comm_;
 };
 

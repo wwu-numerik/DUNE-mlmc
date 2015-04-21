@@ -11,7 +11,6 @@
 #include <dune/multiscale/msfem/localsolution_proxy.hh>
 #include <dune/multiscale/msfem/localproblems/localgridlist.hh>
 #include <dune/multiscale/problems/base.hh>
-#include <dune/multiscale/problems/selector.hh>
 #include <dune/multiscale/common/grid_creation.hh>
 #include <dune/multiscale/msfem/msfem_solver.hh>
 #include <dune/multiscale/msfem/fem_solver.hh>
@@ -37,7 +36,8 @@
 
 
 double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
-                    const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType& solution) {
+                    const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType& solution,
+                        const DMP::ProblemContainer& problem) {
   using namespace Dune::Multiscale;
   const auto gv = grid.leafGridView();
   typedef decltype(gv) ViewType;
@@ -51,7 +51,7 @@ double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
   typedef typename Dune::QuadratureRule<REAL,dim-1> QR;
   typedef typename Dune::QuadratureRules<REAL,dim-1> QRS;
 
-  const auto& diffusion = DMP::getDiffusion();
+  const auto& diffusion = problem.getDiffusion();
 
   // Quadrature rule
   auto iCell = gv.template begin< 0,Dune::Interior_Partition >();
@@ -87,7 +87,7 @@ void MultiLevelMonteCarlo::MsCgFemDifference::init(Dune::MPIHelper::MPICommunica
   local_comm_ = local;
   if(init_called_)
     return;
-  DMP::getMutableModelData().problem_init(global, local);
+  problem_ = DSC::make_unique<DMP::ProblemContainer>(global, local, DSC_CONFIG);
   init_called_ = true;
 }
 
@@ -106,9 +106,9 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
         coarse_space, "MsFEM_Solution");
   Multiscale::MsFEMProjection::project(
         msfem_solution, projected_msfem_solution, msfem_solution.search());
-  const auto coarse_flow = surface_flow_gdt(coarse_grid, projected_msfem_solution);
+  const auto coarse_flow = surface_flow_gdt(coarse_grid, projected_msfem_solution, *problem_);
   if(fine_function && fine_grid) {
-    const auto fine_flow = surface_flow_gdt(*fine_grid, *fine_function);
+    const auto fine_flow = surface_flow_gdt(*fine_grid, *fine_function, *problem_);
     return coarse_flow - fine_flow;
   }
   return coarse_flow;
@@ -117,10 +117,10 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
 double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
   using namespace Dune;
   DSC::OutputScopedTiming tm("mlmc.difference_cg-msfem", DSC_LOG_INFO_0);
-  auto coarse_grid = Multiscale::make_coarse_grid(local_comm_);
+  auto coarse_grid = Multiscale::make_coarse_grid(*problem_, local_comm_);
   // create() new perm field
-  DMP::getMutableModelData().prepare_new_evaluation();
-  auto fine_grid = Multiscale::make_fine_grid(coarse_grid, true,local_comm_);
+  problem_->getMutableModelData().prepare_new_evaluation(*problem_);
+  auto fine_grid = Multiscale::make_fine_grid(*problem_, coarse_grid, true,local_comm_);
 
   typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType
       PartViewType;
@@ -130,14 +130,14 @@ double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
 
   std::unique_ptr<Multiscale::LocalsolutionProxy> msfem_solution(nullptr);
 
-  Multiscale::LocalGridList localgrid_list(coarse_space);
+  Multiscale::LocalGridList localgrid_list(*problem_, coarse_space);
   DSC::profiler().startTiming("mlmc.difference_cg-msfem.msfem-solve");
-  Multiscale::Elliptic_MsFEM_Solver().apply(coarse_space, msfem_solution,
+  Multiscale::Elliptic_MsFEM_Solver().apply(*problem_, coarse_space, msfem_solution,
                                             localgrid_list);
   DSC::profiler().stopTiming("mlmc.difference_cg-msfem.msfem-solve");
 
   DSC::profiler().startTiming("mlmc.difference_cg-msfem.cgfem-solve");
-  Multiscale::Elliptic_FEM_Solver fem(fine_grid);
+  Multiscale::Elliptic_FEM_Solver fem(*problem_, fine_grid);
   const auto &fine_fem_solution = fem.solve();
   DSC::profiler().stopTiming("mlmc.difference_cg-msfem.cgfem-solve");
 
@@ -149,18 +149,18 @@ double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
 double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
   using namespace Dune;
   DSC::OutputScopedTiming tm("mlmc.single_msfem", DSC_LOG_INFO_0);
-  auto coarse_grid = Multiscale::make_coarse_grid(local_comm_);
+  auto coarse_grid = Multiscale::make_coarse_grid(*problem_, local_comm_);
   // create() new perm field
-  DMP::getMutableModelData().prepare_new_evaluation();
+  problem_->getMutableModelData().prepare_new_evaluation(*problem_);
   typedef Multiscale::CommonTraits::SpaceChooserType::PartViewType
       PartViewType;
   const Multiscale::CommonTraits::SpaceType coarse_space(PartViewType::create(
                                                            *coarse_grid, Multiscale::CommonTraits::st_gdt_grid_level));
   std::unique_ptr<Multiscale::LocalsolutionProxy> msfem_solution(nullptr);
 
-  Multiscale::LocalGridList localgrid_list(coarse_space);
+  Multiscale::LocalGridList localgrid_list(*problem_, coarse_space);
   DSC::profiler().startTiming("mlmc.single_msfem.msfem-solve");
-  Multiscale::Elliptic_MsFEM_Solver().apply(coarse_space, msfem_solution,
+  Multiscale::Elliptic_MsFEM_Solver().apply(*problem_, coarse_space, msfem_solution,
                                             localgrid_list);
   DSC::profiler().stopTiming("mlmc.single_msfem.msfem-solve");
 
