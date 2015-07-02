@@ -94,7 +94,7 @@ void MultiLevelMonteCarlo::MsCgFemDifference::init(Dune::MPIHelper::MPICommunica
 std::atomic<bool> MultiLevelMonteCarlo::MsCgFemDifference::init_called_ {false};
 
 double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
-                                                                          const Dune::Multiscale::LocalsolutionProxy &msfem_solution,
+                                                                          Dune::Multiscale::LocalsolutionProxy &msfem_solution,
                                                                           const std::shared_ptr<Dune::Multiscale::CommonTraits::GridType> fine_grid,
                                                                           const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType* fine_function) {
   using namespace Dune;
@@ -105,7 +105,7 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
   Multiscale::CommonTraits::DiscreteFunctionType projected_msfem_solution(
         coarse_space, "MsFEM_Solution");
   Multiscale::MsFEMProjection::project(
-        msfem_solution, projected_msfem_solution, msfem_solution.search());
+        msfem_solution, projected_msfem_solution);
   const auto coarse_flow = surface_flow_gdt(coarse_grid, projected_msfem_solution, *problem_);
   if(fine_function && fine_grid) {
     const auto fine_flow = surface_flow_gdt(*fine_grid, *fine_function, *problem_);

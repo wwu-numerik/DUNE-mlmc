@@ -34,7 +34,7 @@ set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
 add_executable("dune_mlmc" src/dune_mlmc.cc dune/mlmc/msfem.cc)
 target_link_dune_default_libraries("dune_mlmc")
-target_link_libraries(dune_mlmc ${MULTISCALE_LIBS})
+target_link_libraries(dune_mlmc ${MULTISCALE_LIBS} multiscale_common)
 message(STATUS MULTI ${MULTISCALE_LIBS})
 foreach(target dune_mlmc)
   add_dune_metis_flags(${target})

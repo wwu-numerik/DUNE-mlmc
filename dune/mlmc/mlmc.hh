@@ -231,7 +231,7 @@ public:
 
     // Create groups and communicators for different levels.
     for (int i = 0; i < nLevel; ++i) {
-      _level[i].setRepetitions(nBreak); // TODO: better
+      _level[i].setRepetitions(6*nBreak); // TODO: better
       _level[i].assignProcessors(world);
     }
 

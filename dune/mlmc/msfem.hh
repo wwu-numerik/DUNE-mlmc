@@ -30,7 +30,7 @@ public:
   virtual void init(Dune::MPIHelper::MPICommunicator global, Dune::MPIHelper::MPICommunicator local);
 
   double compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
-                                   const Dune::Multiscale::LocalsolutionProxy &msfem_solution,
+                                   Dune::Multiscale::LocalsolutionProxy &msfem_solution,
                                    const std::shared_ptr<Dune::Multiscale::CommonTraits::GridType> fine_grid = nullptr,
                                    const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType* fine_function = nullptr);
 
