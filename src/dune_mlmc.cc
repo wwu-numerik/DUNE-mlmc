@@ -18,10 +18,10 @@ int main(int argc, char** argv) {
   using namespace MultiLevelMonteCarlo;
   try {
     msfem_init(argc, argv);
-//    DSC::OutputScopedTiming tm("mlmc.all", DSC_LOG_INFO_0);
+    //    DSC::OutputScopedTiming tm("mlmc.all", DSC_LOG_INFO_0);
     DSC::ScopedTiming tm("mlmc.all");
-    MsFemSingleDifference msfem_single;
-    MsCgFemDifference ms_cg_fem_diff;
+    auto msfem_single = std::make_shared<MsFemSingleDifference>();
+    auto ms_cg_fem_diff = std::make_shared<MsCgFemDifference>();
     MultiLevelMonteCarlo::MLMC mlmc;
     mlmc.addDifference(msfem_single, DSC_CONFIG_GET("mlmc.coarse_ranks", 1u));
     mlmc.addDifference(ms_cg_fem_diff, DSC_CONFIG_GET("mlmc.fine_ranks", 1u));

@@ -87,6 +87,7 @@ void MultiLevelMonteCarlo::MsCgFemDifference::init(Dune::MPIHelper::MPICommunica
   if(init_called_)
     return;
   problem_ = DSC::make_unique<DMP::ProblemContainer>(global, local, DSC_CONFIG);
+  assert(problem_);
   init_called_ = true;
 }
 
@@ -116,6 +117,8 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
 double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
   using namespace Dune;
   DSC::OutputScopedTiming tm("mlmc.difference_cg-msfem", DSC_LOG_INFO_0);
+  assert(init_called_);
+  assert(problem_);
   auto coarse_grid = Multiscale::make_coarse_grid(*problem_, local_comm_);
   // create() new perm field
   problem_->getMutableModelData().prepare_new_evaluation(*problem_);
@@ -148,6 +151,8 @@ double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
 double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
   using namespace Dune;
   DSC::OutputScopedTiming tm("mlmc.single_msfem", DSC_LOG_INFO_0);
+  assert(problem_);
+//  assert(init_called_);
   auto coarse_grid = Multiscale::make_coarse_grid(*problem_, local_comm_);
   // create() new perm field
   problem_->getMutableModelData().prepare_new_evaluation(*problem_);

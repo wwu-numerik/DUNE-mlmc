@@ -13,6 +13,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <boost/noncopyable.hpp>
+#include <dune/stuff/common/exceptions.hh>
+
 /// \file Environment for computing expected values by the Multi Level
 /// Monte Carlo approach. For each level you have to provide extensions
 /// of the base class Difference which implement the two methods
@@ -29,7 +32,7 @@ namespace MultiLevelMonteCarlo {
 static void check(bool condition, const char* message) {
   if (!condition) {
     std::cerr << message << "\n";
-    exit(1);
+    DUNE_THROW(Dune::InvalidStateException, message);
   }
 }
 
@@ -39,7 +42,7 @@ static bool isPowerOf2(int x) { return (x != 0) && ((x & (x - 1)) == 0); }
 
 /// Base class of difference of solutions on subsequent levels.
 /// On the coarsest level the solution itself has to be returned.
-class Difference {
+class Difference : boost::noncopyable {
 public:
   /// Initialize level.
   /// \param global  global communicator
@@ -64,13 +67,13 @@ public:
     , _sumX(0)
     , _sumX2(0)
     , _T(0)
-    , _diff(NULL)
+    , _diff(nullptr)
     , _masters(MPI_COMM_NULL) {}
 
   /// Constructs level from Difference object.
   /// \param diff     Difference object
   /// \param minProc  minimal number of processors needed to compute solution
-  Level(Difference& diff, int minProc = 1)
+  Level(const std::shared_ptr<Difference> diff, int minProc = 1)
     : _n(0)
     , _N(0)
     , _p(minProc)
@@ -78,7 +81,7 @@ public:
     , _sumX(0)
     , _sumX2(0)
     , _T(0)
-    , _diff(&diff)
+    , _diff(diff)
     , _masters(MPI_COMM_NULL) {
     check(minProc > 0, "minProc must be positive.");
   }
@@ -171,7 +174,7 @@ private:
   double _sumX;            ///< sum of results so far
   double _sumX2;           ///< sum of squared results so far
   double _T;               ///< total time of repetitions so far
-  Difference* const _diff; ///< pointer to Difference object
+  const std::shared_ptr<Difference> _diff; ///< pointer to Difference object
   MPI_Comm _group;         ///< communicator of group
   MPI_Comm _masters;       ///< communicator of masters
   bool _isMaster;          ///< flag indicating master
@@ -185,9 +188,9 @@ public:
   /// Adds difference object.
   /// \param diff     Difference object
   /// \param minProc  minimal number of processors needed to compute solution
-  void addDifference(Difference& diff, int minProc) {
+  void addDifference(const std::shared_ptr<Difference> diff, int minProc) {
     check(isPowerOf2(minProc), "minProc must be power of 2.");
-    _level.push_back(Level(diff, minProc));
+    _level.emplace_back(diff, minProc);
   }
 
   /// Computes optimal number of repetitions per level .
@@ -231,7 +234,7 @@ public:
 
     // Create groups and communicators for different levels.
     for (int i = 0; i < nLevel; ++i) {
-      _level[i].setRepetitions(6*nBreak); // TODO: better
+      _level[i].setRepetitions(6 * nBreak); // TODO: better
       _level[i].assignProcessors(world);
     }
 
@@ -240,15 +243,15 @@ public:
       for (int iLevel = 0; iLevel < nLevel; ++iLevel) {
 
         // Moments of groups.
-        Level* l = &(_level[iLevel]);
-        int n = l->nextRepetitions(iBreak, nBreak);
+        Level& l = _level[iLevel];
+        int n = l.nextRepetitions(iBreak, nBreak);
         if (n <= 0)
           continue;
         double grpSumX = 0;
         double grpSumX2 = 0;
         double grpT = MPI_Wtime();
         for (int i = 0; i < n; ++i) {
-          double x = l->eval();
+          const double x = l.eval();
           grpSumX += x;
           grpSumX2 += x * x;
         }
@@ -263,18 +266,18 @@ public:
         double sumX = 0;
         double sumX2 = 0;
         double T = 0;
-        MPI_Comm masters = l->getMasters();
-        MPI_Comm group = l->getGroup();
+        MPI_Comm masters = l.getMasters();
+        MPI_Comm group = l.getGroup();
         // Accumulate within groups
         MPI_Reduce(&grpSumX, &sumX, 1, MPI_DOUBLE, MPI_SUM, 0, group);
         MPI_Reduce(&grpSumX2, &sumX2, 1, MPI_DOUBLE, MPI_SUM, 0, group);
         MPI_Reduce(&grpT, &T, 1, MPI_DOUBLE, MPI_SUM, 0, group);
         // Accumulate over group masters
-        if (l->isMaster()) {
+        if (l.isMaster()) {
           MPI_Allreduce(&grpSumX, &sumX, 1, MPI_DOUBLE, MPI_SUM, masters);
           MPI_Allreduce(&grpSumX2, &sumX2, 1, MPI_DOUBLE, MPI_SUM, masters);
           MPI_Allreduce(&grpT, &T, 1, MPI_DOUBLE, MPI_SUM, masters);
-          T /= l->groups() * l->procs();
+          T /= l.groups() * l.procs();
         }
         // Distribute master results over groups
         MPI_Bcast(&sumX, 1, MPI_DOUBLE, 0, group);
@@ -282,7 +285,7 @@ public:
         MPI_Bcast(&T, 1, MPI_DOUBLE, 0, group);
 
         // Update moments.
-        l->update(n, sumX, sumX2, T);
+        l.update(n, sumX, sumX2, T);
       }
 
       // Compute optimal number of repetitions per algorithm.

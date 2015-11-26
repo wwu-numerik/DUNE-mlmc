@@ -18,7 +18,6 @@ class LocalsolutionProxy;
 }
 }
 
-
 namespace MultiLevelMonteCarlo {
 
 class MsCgFemDifference : public Difference {
@@ -29,13 +28,15 @@ public:
   /// \param local   communicator of processors involved in this solution
   virtual void init(Dune::MPIHelper::MPICommunicator global, Dune::MPIHelper::MPICommunicator local);
 
-  double compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
-                                   Dune::Multiscale::LocalsolutionProxy &msfem_solution,
-                                   const std::shared_ptr<Dune::Multiscale::CommonTraits::GridType> fine_grid = nullptr,
-                                   const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType* fine_function = nullptr);
+  double
+  compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
+                            Dune::Multiscale::LocalsolutionProxy& msfem_solution,
+                            const std::shared_ptr<Dune::Multiscale::CommonTraits::GridType> fine_grid = nullptr,
+                            const Dune::Multiscale::CommonTraits::ConstDiscreteFunctionType* fine_function = nullptr);
 
   /// Evaluate difference of solutions on subsequent levels.
   virtual double eval();
+
 private:
   static std::atomic<bool> init_called_;
 
