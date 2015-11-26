@@ -38,7 +38,7 @@ public:
   virtual double eval();
 
 private:
-  static std::atomic<bool> init_called_;
+  std::atomic<bool> init_called_{false};
 
 protected:
   std::unique_ptr<DMP::ProblemContainer> problem_;

@@ -86,12 +86,11 @@ void MultiLevelMonteCarlo::MsCgFemDifference::init(Dune::MPIHelper::MPICommunica
   local_comm_ = local;
   if(init_called_)
     return;
+
   problem_ = DSC::make_unique<DMP::ProblemContainer>(global, local, DSC_CONFIG);
   assert(problem_);
   init_called_ = true;
 }
-
-std::atomic<bool> MultiLevelMonteCarlo::MsCgFemDifference::init_called_ {false};
 
 double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const Dune::Multiscale::CommonTraits::GridType& coarse_grid,
                                                                           Dune::Multiscale::LocalsolutionProxy &msfem_solution,
