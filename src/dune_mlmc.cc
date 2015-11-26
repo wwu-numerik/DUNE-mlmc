@@ -16,22 +16,38 @@
 
 int main(int argc, char** argv) {
   using namespace MultiLevelMonteCarlo;
+  using namespace std;
   try {
     msfem_init(argc, argv);
     //    DSC::OutputScopedTiming tm("mlmc.all", DSC_LOG_INFO_0);
     DSC::ScopedTiming tm("mlmc.all");
-    auto msfem_single = std::make_shared<MsFemSingleDifference>();
-    auto ms_cg_fem_diff = std::make_shared<MsCgFemDifference>();
+    auto msfem_single = make_shared<MsFemSingleDifference>();
+    auto ms_cg_fem_diff = make_shared<MsCgFemDifference>();
     MultiLevelMonteCarlo::MLMC mlmc;
     mlmc.addDifference(msfem_single, DSC_CONFIG_GET("mlmc.coarse_ranks", 1u));
     mlmc.addDifference(ms_cg_fem_diff, DSC_CONFIG_GET("mlmc.fine_ranks", 1u));
     const auto tolerance = DSC_CONFIG_GET("mlmc.tolerance", 0.1f);
     const auto breaks = DSC_CONFIG_GET("mlmc.breaks", 2u);
     const auto value = mlmc.expectation(tolerance, breaks);
-    DSC_LOG_INFO_0 << "\nExpected " << value << std::endl;
+    DSC_LOG_INFO_0 << "\nExpected " << value << endl;
+    if(Dune::MPIHelper::getCollectiveCommunication().rank() == 0) {
+      unique_ptr<boost::filesystem::ofstream> csvfile(
+          DSC::make_ofstream(DSC_CONFIG_GET("global.datadir", "data/") + string("/errors.csv")));
+      map<string, double> csv{{"expectation", value}};
+      const string sep(",");
+      for (const auto& key_val : csv) {
+        *csvfile << key_val.first << sep;
+      }
+      *csvfile << endl;
+      for (const auto& key_val : csv) {
+        *csvfile << key_val.second << sep;
+      }
+      *csvfile << endl;
+    }
+
   } catch (Dune::Exception& e) {
     return Dune::Multiscale::handle_exception(e);
-  } catch (std::exception& s) {
+  } catch (exception& s) {
     return Dune::Multiscale::handle_exception(s);
   }
   DSC_PROFILER.outputTimings("profiler");
