@@ -78,6 +78,7 @@ double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
       }
     }
   }
+  localFlux = grid.comm().sum(localFlux);
   return localFlux;
 }
 
