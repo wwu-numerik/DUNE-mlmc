@@ -4,7 +4,7 @@
 #@ energy_policy_tag = NONE
 # DO NOT USE environment = COPY_ALL
 #@ job_type = MPICH
-#@ class = {{ 'test' if NODES < 4 else 'general' }}
+#@ class = {{ 'test' if NODES < 9 else 'general' }}
 #@ node = {{ NODES }}
 #@ island_count=1
 # other example
@@ -13,7 +13,7 @@
 ##                    1 h 20 min 30 secs
 #@ job_name = msfem_{{ MACRO }}x{{ MICRO }}_{{ NODES }}N_14C
 #@ network.MPI = sn_all,not_shared,us
-#@ initialdir = $(home)/mlmc-build-phase2/dune-multiscale
+#@ initialdir = $(home)/mlmc-build-phase2/dune-mlmc
 #@ output = job_mlmc_{{ MACRO }}x{{ MICRO }}_{{ NODES }}N_1C_$(jobid).out
 #@ error = job_mlmc_{{ MACRO }}x{{ MICRO }}_{{ NODES }}N_1C_$(jobid).err
 #@ notification=always
@@ -26,7 +26,7 @@ source $HOME/.modules
 #optional: 
 #module load mpi_pinning/hybrid_blocked
 
-BIN=$HOME/mlmc-build-phase2/dune-multiscale/dune_mlmc
+BIN=$HOME/mlmc-build-phase2/dune-mlmc/dune_mlmc
 
 OPT="$HOME/dune-multiscale-super/dune-mlmc/parameter_files/supermuc_test.ini \
 -global.datadir $HOME/mlmc-build-phase2/dune-mlmc/speedup_n{{ '%05d' % 2 * NODES }}_{{ MACRO }}x{{ MICRO }}_T14 \
