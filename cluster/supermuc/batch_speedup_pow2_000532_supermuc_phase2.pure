@@ -29,6 +29,6 @@ source $HOME/.modules
 BIN=$HOME/mlmc-build-phase2/dune-mlmc/dune_mlmc
 
 OPT="$HOME/dune-multiscale-super/dune-mlmc/parameter_files/supermuc_test.ini \
-	-global.datadir $HOME/mlmc-build-phase2/dune-mlmc/speedup_n00532_8x8_T1 \
+	-global.datadir $HOME/mlmc-build-phase2/dune-mlmc/speedup_n00512_8x8_T1 \
 -grids.macro_cells_per_dim 8 -grids.micro_cells_per_macrocell_dim 8 -threading.max_count 1 "
-mpirun -n 5 $BIN ${OPT}
+mpirun -n  512 $BIN ${OPT}
