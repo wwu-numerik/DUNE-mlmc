@@ -4,18 +4,18 @@
 #@ energy_policy_tag = NONE
 # DO NOT USE environment = COPY_ALL
 #@ job_type = MPICH
-#@ class = {{ 'test' if NODES < 9 else 'general' }}
-#@ node = {{ NODES }}
+#@ class = general
+#@ node = 74
 #@ island_count=1
 # other example
 #@ tasks_per_node = 28
 #@ wall_clock_limit = 0:2:30
 ##                    1 h 20 min 30 secs
-#@ job_name = msfem_{{ MACRO }}x{{ MICRO }}_{{ NODES }}N_1C
+#@ job_name = msfem_8x8_74N_1C
 #@ network.MPI = sn_all,not_shared,us
 #@ initialdir = $(home)/mlmc-build-phase2/dune-mlmc
-#@ output = job_mlmc_{{ MACRO }}x{{ MICRO }}_{{ NODES }}N_1C_$(jobid).out
-#@ error = job_mlmc_{{ MACRO }}x{{ MICRO }}_{{ NODES }}N_1C_$(jobid).err
+#@ output = job_mlmc_8x8_74N_1C_$(jobid).out
+#@ error = job_mlmc_8x8_74N_1C_$(jobid).err
 #@ notification=always
 #@ notify_user=rene.milk@wwu.de
 #@ queue
@@ -29,6 +29,6 @@ source $HOME/.modules
 BIN=$HOME/mlmc-build-phase2/dune-mlmc/dune_mlmc
 
 OPT="$HOME/dune-multiscale-super/dune-mlmc/parameter_files/supermuc_test.ini \
-	-global.datadir $HOME/mlmc-build-phase2/dune-mlmc/speedup_n{{ '%05d' % (28 * NODES) }}_{{ MACRO }}x{{ MICRO }}_T1 \
--grids.macro_cells_per_dim {{ MACRO }} -grids.micro_cells_per_macrocell_dim {{ MICRO }} -threading.max_count 1 "
-mpirun -n {{ POWER }} $BIN ${OPT}
+	-global.datadir $HOME/mlmc-build-phase2/dune-mlmc/speedup_n02072_8x8_T1 \
+-grids.macro_cells_per_dim 8 -grids.micro_cells_per_macrocell_dim 8 -threading.max_count 1 "
+mpirun -n 5 $BIN ${OPT}
