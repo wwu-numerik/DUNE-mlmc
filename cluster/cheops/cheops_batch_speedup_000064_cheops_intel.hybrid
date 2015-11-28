@@ -1,0 +1,25 @@
+#!/bin/bash -l 
+#SBATCH --nodes=64
+#SBATCH --ntasks-per-node=2
+#SBATCH --ntasks=128
+#SBATCH --cpus-per-task=6
+#SBATCH --mem=23gb 
+#SBATCH --time=02:00:00 
+#SBATCH --account=UniKoeln 
+#SBATCH --partition=mpi
+#SBATCH --constraint=[inca12*64]
+#SBATCH --exclusive
+#SBATCH --workdir /scratch/rmilk/mlmc-build-intel/dune-mlmc
+#SBATCH -o mlmc_icc_hybrid_np_64_out_128_8x8_T6
+#SBATCH -e mlmc_icc_hybrid_np_64_out_128_8x8_T6.err
+#SBATCH --mail-user=rmilk@uni-koeln.de
+#SBATCH --mail-type=end 
+
+source $HOME/.modules.icc
+
+BIN=/scratch/rmilk/mlmc-build-intel/dune-mlmc/dune_mlmc
+OPT="/home/rmilk/cmake_multiscale/dune-mlmc/parameter_files/cheops.ini \
+    -global.datadir /scratch/rmilk/dune/mlmc_icc_ilut_hybrid_run_np_00128_out_64_8x8_T6 \
+    -grids.macro_cells_per_dim 8 -grids.micro_cells_per_macrocell_dim 8 \
+    -threading.max_count 6"
+srun -n 128 -N 64 $BIN ${OPT}

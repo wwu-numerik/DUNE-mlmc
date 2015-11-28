@@ -9,16 +9,17 @@
 #SBATCH --partition=mpi
 #SBATCH --constraint=[inca12*{{ NODES }}]
 #SBATCH --exclusive
-#SBATCH -o icc_out_hybrid_run_np_{{ NODES }}_out_{{ NODES }}_{{ MACRO }}x{{ MICRO }}_T6
-#SBATCH -e icc_out_hybrid_run_np_{{ NODES }}_out_{{ NODES }}_{{ MACRO }}x{{ MICRO }}_T6.err
+#SBATCH --workdir /scratch/rmilk/mlmc-build-intel/dune-mlmc
+#SBATCH -o mlmc_icc_hybrid_np_{{ NODES }}_out_{{ NODES * 2 }}_{{ MACRO }}x{{ MICRO }}_T6
+#SBATCH -e mlmc_icc_hybrid_np_{{ NODES }}_out_{{ NODES * 2 }}_{{ MACRO }}x{{ MICRO }}_T6.err
 #SBATCH --mail-user=rmilk@uni-koeln.de
 #SBATCH --mail-type=end 
 
 source $HOME/.modules.icc
 
-BIN=/scratch/rmilk/multiscale-build-intel/dune-mlmc/dune_mlmc
-OPT="/home/rmilk/cmake_multiscale/dune-mlmc/parameter_files/random_0.03.ini \
-    -global.datadir /scratch/rmilk/dune/icc_ilut_hybrid_run_np_{{ NODES }}_out_{{ NODES }}_{{ MACRO }}x{{ MICRO }}_T6 \
+BIN=/scratch/rmilk/mlmc-build-intel/dune-mlmc/dune_mlmc
+OPT="/home/rmilk/cmake_multiscale/dune-mlmc/parameter_files/cheops.ini \
+    -global.datadir /scratch/rmilk/dune/mlmc_icc_ilut_hybrid_run_np_{{ '%05d' % (NODES * 2) }}_out_{{ NODES }}_{{ MACRO }}x{{ MICRO }}_T6 \
     -grids.macro_cells_per_dim {{ MACRO }} -grids.micro_cells_per_macrocell_dim {{ MICRO }} \
     -threading.max_count 6"
 srun -n {{ NODES * 2 }} -N {{ NODES }} $BIN ${OPT}

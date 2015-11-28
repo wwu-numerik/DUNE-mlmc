@@ -44,16 +44,19 @@ for key, value in args.items():
     except ValueError:
         continue
 
-nodes = [5, 10, 19, 37, 74, 147, 293, 586]
-for i in range(args['STARTNODE'], max(args['POWER'], len(nodes)-args['STARTNODE'])):
-    n = nodes[i]
-    args['NODES'] = n
-    for p in (28,):
-        args['POWER2_{}'.format(p)] = int(math.pow(2, math.floor(math.log2(n*p))))
-        print(args['POWER2_{}'.format(p)])
+cfg = {'supermuc' : (28, [2, 3, 5, 10, 19, 37, 74, 147, 293, 586]),
+       'cheops': (12, [2, 3, 6, 11, 22, 43, 86, 171, 342, 683])}
+for hpc, (cores, nodes) in cfg.items():
+    max_int = max(args['POWER'], len(nodes)-args['STARTNODE'])
+    for i in range(args['STARTNODE'], max_int):
+        n = nodes[i]
+        args['NODES'] = n
+        ranks = int(math.pow(2, math.floor(math.log2(n*cores))))
+        args['POWER2_RANKS'] = ranks
+        print(ranks)
 
-    fn = 'batch_speedup_pow2_{0:06}_{1}'.format(nodes[i] * 28, tpl_fn.replace('/', '_'))
-    with open(fn, 'wb') as out:
-        out.write(bytes(tpl.render(**args), 'UTF-8'))
-    print('$SUBMIT {}'.format(fn))
+        fn = '{2}_batch_speedup_pow2_{0:06}_{1}'.format(ranks, tpl_fn.replace('/', '_'), hpc)
+        with open(fn, 'wb') as out:
+            out.write(bytes(tpl.render(**args), 'UTF-8'))
+        print('$SUBMIT {}'.format(fn))
 

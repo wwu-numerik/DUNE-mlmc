@@ -4,7 +4,7 @@
 #@ energy_policy_tag = NONE
 # DO NOT USE environment = COPY_ALL
 #@ job_type = MPICH
-#@ class = {{ 'test' if NODES < 11 else 'general' }}
+#@ class = {{ 'test' if NODES < 17 else 'general' }}
 #@ node = {{ NODES }}
 #@ island_count=1
 # other example

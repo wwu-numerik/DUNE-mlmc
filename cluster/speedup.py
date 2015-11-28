@@ -45,14 +45,17 @@ for key, value in args.items():
         continue
 
 nodes = args['STARTNODE']
-for i, n in enumerate([int(nodes * math.pow(2, i)) for i in range(0, args['POWER'])]):
-    args['NODES'] = n
-    for p in (12, 28):
-        args['POWER2_{}'.format(p)] = int(math.pow(2, math.floor(math.log2(n*p))))
-        print(args['POWER2_{}'.format(p)])
+cfg = {'supermuc' : (28, []),
+       'cheops': (12, [])}
+for hpc, (cores, _) in cfg.items():
+    for i, n in enumerate([int(nodes * math.pow(2, i)) for i in range(0, args['POWER'])]):
+        args['NODES'] = n
+        ranks = int(math.pow(2, math.floor(math.log2(n*cores))))
+        args['POWER2_RANKS'] = ranks
+        print(ranks)
 
-    fn = 'batch_speedup_{0:06}_{1}'.format(n, tpl_fn.replace('/', '_'))
-    with open(fn, 'wb') as out:
-        out.write(bytes(tpl.render(**args), 'UTF-8'))
-    print('$SUBMIT {}'.format(fn))
+        fn = '{2}_batch_speedup_{0:06}_{1}'.format(n, tpl_fn.replace('/', '_'), hpc)
+        with open(fn, 'wb') as out:
+            out.write(bytes(tpl.render(**args), 'UTF-8'))
+        print('$SUBMIT {}'.format(fn))
 
