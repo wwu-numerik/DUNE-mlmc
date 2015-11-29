@@ -27,6 +27,7 @@
 #include <dune/stuff/common/profiler.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/configuration.hh>
+#include <dune/stuff/common/signals.hh>
 
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/weightedl2.hh>
@@ -184,6 +185,12 @@ void set_config_values(const std::vector<std::string> &keys,
   // DSC::Config().add(DSC::Configuration(keys, values), "", true);
 }
 
+void handle_sigterm(int) {
+  DSC_PROFILER.stopAll();
+  DSC_PROFILER.outputTimings("profiler");
+  std::exit(5);
+}
+
 void MultiLevelMonteCarlo::msfem_init(int argc, char **argv) {
   using namespace std;
 #if DUNE_MULTISCALE_WITH_DUNE_FEM
@@ -218,6 +225,7 @@ void MultiLevelMonteCarlo::msfem_init(int argc, char **argv) {
                        DSC_CONFIG_GET("logging.dir", "log" /*path below datadir*/));
   DSC_PROFILER.setOutputdir(DSC_CONFIG_GET("global.datadir", "data"));
   DS::threadManager().set_max_threads(DSC_CONFIG_GET("threading.max_count", 1));
+  DSC::installSignalHandler(SIGTERM, handle_sigterm);
 }
 
 
