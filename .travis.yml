@@ -1,4 +1,3 @@
-
 sudo: required
 dist: trusty
 language: generic
@@ -13,11 +12,16 @@ addons:
     - texlive-base
     - python-virtualenv
     - python-pytest
-    - libboost1.55-all-dev
+    # avoid installing fusion
+    - libboost-system1.55-dev
+    - libboost-thread1.55-dev
+    - libboost-filesystem1.55-dev
+    - libboost-date-time1.55-dev
+    - libboost-timer1.55-dev
+    - libboost-chrono1.55-dev
     - python-pip
     - libtbb-dev
     - ccache
-    - 
     - libsuitesparse-dev
     - lcov
     - curl
@@ -30,7 +34,7 @@ before_install:
   - |-
     : ${BUILD_CMD:="ninja -k 10000 -j 2"} && export BUILD_CMD
   # workaround for https://github.com/travis-ci/travis-ci/issues/5285
-  - sudo -E apt-get install -y -q python-pip python3-pip libfftw3-mpi-dev libgmp10-dev libparmetis-dev
+  - sudo -E apt-get install -y -q python-pip libmetis-dev python3-pip libfftw3-mpi-dev
   - sudo -E pip3 install virtualenv cpp-coveralls
   - sudo -E pip install virtualenv cpp-coveralls
   - export PATH=/usr/lib/ccache:$PATH
@@ -82,11 +86,6 @@ notifications:
   email:
     on_success: change
     on_failure: change
-  webhooks:
-    - https://buildtimetrend.herokuapp.com/travis
-
-#after_success:
-#- coveralls
 
 branches:
   except:
