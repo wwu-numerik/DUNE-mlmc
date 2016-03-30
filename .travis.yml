@@ -41,10 +41,9 @@ before_install:
   - cd $HOME
   - test -d src || git clone https://github.com/wwu-numerik/dune-multiscale-super.git src
   - cd $HOME/src
-  - alias ll='ls -lh'
-  - ll $PWD
-  - ll scripts/
-  - ll scripts/bash/
+  - ls -lh $PWD
+  - ls -lh scripts/
+  - ls -lh scripts/bash/
   - ./scripts/bash/travis_prepare_compiler_setup.sh
   - git submodule update --init --recursive
   - git submodule status
