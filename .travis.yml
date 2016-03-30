@@ -40,9 +40,9 @@ before_install:
   - export PATH=/usr/lib/ccache:$PATH
   - cd $HOME
   - test -d src || git clone https://github.com/wwu-numerik/dune-multiscale-super.git src
+  - cd $HOME/src
   - git submodule update --init --recursive
   - git submodule status
-  - cd $HOME/src
   - ls -lh $PWD
   - ls -lh scripts/
   - ls -lh scripts/bash/
