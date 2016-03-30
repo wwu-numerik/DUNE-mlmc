@@ -41,6 +41,7 @@ before_install:
   - cd $HOME
   - test -d src || git clone https://github.com/wwu-numerik/dune-multiscale-super.git src
   - cd $HOME/src
+  - alias ll='ls -lh'
   - ll $PWD
   - ll scripts/
   - ll scripts/bash/
