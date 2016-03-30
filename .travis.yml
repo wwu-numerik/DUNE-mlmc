@@ -41,6 +41,7 @@ before_install:
   - cd $HOME
   - test -d src || git clone https://github.com/wwu-numerik/dune-multiscale-super.git src
   - cd $HOME/src
+  - ./scripts/bash/travis_prepare_compiler_setup.sh
   - git submodule update --init --recursive
   - git submodule status
   - export DCTRL_ARG="--builddir=${DUNE_BUILD_DIR}  --opts=${OPTS}"
@@ -100,7 +101,7 @@ cache:
 
 env:
   global:
-    - MY_MODULE=dune-mlmc DUNE_BUILD_DIR=${HOME}/dune_build/ INSTALL_DIR=$HOME/dune CTEST_OUTPUT_ON_FAILURE=1
+    - MY_MODULE=dune-mlmc GCCDEFAULT=4.9 DUNE_BUILD_DIR=${HOME}/dune_build/ INSTALL_DIR=$HOME/dune CTEST_OUTPUT_ON_FAILURE=1
 
 matrix:
   include:
@@ -110,11 +111,9 @@ matrix:
         apt:
           sources:
           - *commonsources
-          - 'ubuntu-toolchain-r-test'
           packages:
           - *commonpackages
-          - ['g++-4.9', 'gcc-4.9']
-      env: CXX=g++-4.9 CC=gcc-4.9
+      env: CXX=g++ CC=gcc 
 
     - os: linux
       compiler: gcc
@@ -122,11 +121,10 @@ matrix:
         apt:
           sources:
           - *commonsources
-          - 'ubuntu-toolchain-r-test'
           packages:
           - *commonpackages
           - ['g++-5', 'gcc-5']
-      env: CXX=g++-5 CC=gcc-5
+      env: CXX=g++-5 CC=gcc-5 
 
     - os: linux
       compiler: clang
