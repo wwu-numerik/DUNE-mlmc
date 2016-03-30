@@ -40,13 +40,13 @@ before_install:
   - export PATH=/usr/lib/ccache:$PATH
   - cd $HOME
   - test -d src || git clone https://github.com/wwu-numerik/dune-multiscale-super.git src
+  - git submodule update --init --recursive
+  - git submodule status
   - cd $HOME/src
   - ls -lh $PWD
   - ls -lh scripts/
   - ls -lh scripts/bash/
   - ./scripts/bash/travis_prepare_compiler_setup.sh
-  - git submodule update --init --recursive
-  - git submodule status
   - export DCTRL_ARG="--builddir=${DUNE_BUILD_DIR}  --opts=${OPTS}"
   # our local scripts look for an OPTS env entry
   - ./local/bin/download_external_libraries.py
