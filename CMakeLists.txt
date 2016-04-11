@@ -1,5 +1,14 @@
-cmake_minimum_required(VERSION 2.8.6)
-project(dune-mlmc CXX)
+PROJECT(dune-mlmc CXX)
+
+# local environment
+set( ENV{PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/bin:$ENV{PATH}" )
+set( ENV{LD_LIBRARY_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib:$ENV{LD_LIBRARY_PATH}" )
+set( ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}" )
+
+#set minimum cmake version
+cmake_minimum_required(VERSION 3.1)
+set( CMAKE_COLOR_MAKEFILE ON)
+
 
 if(NOT (dune-common_DIR OR dune-common_ROOT OR
       "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*"))
@@ -21,6 +30,7 @@ dune_project()
 
 add_subdirectory("dune")
 add_subdirectory("cmake/modules")
+add_subdirectory(doc)
 
 # setup header so they show up in QtCreator project trees
 foreach(_dep ${ALL_DEPENDENCIES})
@@ -47,7 +57,7 @@ foreach(target dune_mlmc)
 endforeach()
 
 #disable most warnings from dependent modules, except gdt,stuff
-list(APPEND module_exceptions "dune-gdt" "dune-stuff")
+list(APPEND module_exceptions "dune-stuff" "dune-xt-common" "dune-xt-la" "dune-xt-grid" "dune-xt-functions" "dune-gdt")
 foreach(_mod ${ALL_DEPENDENCIES})
   list (FIND module_exceptions "${_mod}" _index)
   if (_index LESS 0)
@@ -65,3 +75,4 @@ add_format(src/dune_mlmc.cc
 
 # finalize the dune project, e.g. generating config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
+
