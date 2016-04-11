@@ -41,7 +41,7 @@ before_install:
   - cd $HOME
   - test -d src || git clone https://github.com/wwu-numerik/dune-multiscale-super.git src
   - cd $HOME/src
-  - git submodule update --init --recursive
+  - travis_retry git submodule update --init --recursive
   - git submodule status
   - ./scripts/bash/travis_prepare_compiler_setup.sh ${GCCDEFAULT}
   - export DCTRL_ARG="--builddir=${DUNE_BUILD_DIR}  --opts=${OPTS}"
