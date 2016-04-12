@@ -28,8 +28,8 @@ include(DuneMacros)
 dune_project()
 
 
-add_subdirectory("dune")
-add_subdirectory("cmake/modules")
+add_subdirectory(dune)
+add_subdirectory(cmake/modules)
 add_subdirectory(doc)
 
 # setup header so they show up in QtCreator project trees
@@ -42,22 +42,15 @@ FILE( GLOB_RECURSE local_dune "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
 set( COMMON_HEADER ${local_header} ${local_dune} ${DUNE_HEADERS} )
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
+dune_enable_all_packages(
+   INCLUDE_DIRS ${dune-mlmc}/dune
+)
+
 add_executable("dune_mlmc" src/dune_mlmc.cc dune/mlmc/msfem.cc)
-target_link_dune_default_libraries("dune_mlmc")
-target_link_libraries(dune_mlmc ${MULTISCALE_LIBS} multiscale_common)
-message(STATUS MULTI ${MULTISCALE_LIBS})
-foreach(target dune_mlmc)
-  add_dune_metis_flags(${target})
-  add_dune_parmetis_flags(${target})
-  add_dune_superlu_flags(${target})
-  add_dune_umfpack_flags(${target})
-  add_dune_tbb_flags(${target})
-  add_dune_alugrid_flags(${target})
-  add_dune_mpi_flags(${target})
-endforeach()
+
 
 #disable most warnings from dependent modules, except gdt,stuff
-list(APPEND module_exceptions "dune-stuff" "dune-xt-common" "dune-xt-la" "dune-xt-grid" "dune-xt-functions" "dune-gdt")
+list(APPEND module_exceptions "dune-multiscale" "dune-stuff" "dune-xt-common" "dune-xt-la" "dune-xt-grid" "dune-xt-functions" "dune-gdt")
 foreach(_mod ${ALL_DEPENDENCIES})
   list (FIND module_exceptions "${_mod}" _index)
   if (_index LESS 0)
