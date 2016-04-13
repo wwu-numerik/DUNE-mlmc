@@ -30,6 +30,7 @@ dune_project()
 
 dune_enable_all_packages(
    INCLUDE_DIRS ${dune-mlmc}/dune
+   MODULE_LIBRARIES mlmc_common
 )
 
 add_subdirectory(dune)
@@ -47,7 +48,8 @@ set( COMMON_HEADER ${local_header} ${local_dune} ${DUNE_HEADERS} )
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
 
-add_executable("dune_mlmc" src/dune_mlmc.cc dune/mlmc/msfem.cc)
+dune_library_add_sources(mlmc_common SOURCES dune/mlmc/msfem.cc)
+add_executable("dune_mlmc" src/dune_mlmc.cc )
 
 
 #disable most warnings from dependent modules, except gdt,stuff
