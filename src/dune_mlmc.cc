@@ -11,18 +11,18 @@
 #include <dune/mlmc/mlmc.hh>
 #include <dune/multiscale/common/main_init.hh>
 
-#include <dune/stuff/common/profiler.hh>
-#include <dune/stuff/common/configuration.hh>
-#include <dune/stuff/common/signals.hh>
+#include <dune/xt/common/timings.hh>
+#include <dune/xt/common/configuration.hh>
+#include <dune/xt/common/signals.hh>
 
 int main(int argc, char** argv) {
   using namespace MultiLevelMonteCarlo;
   using namespace std;
   try {
     msfem_init(argc, argv);
-    //    DSC::OutputScopedTiming tm("mlmc.all", DSC_LOG_INFO_0);
+    //    Dune::XT::Common::OutputScopedTiming tm("mlmc.all", DSC_LOG_INFO_0);
     {
-      DSC::ScopedTiming tm("mlmc.all");
+      Dune::XT::Common::ScopedTiming tm("mlmc.all");
       auto msfem_single = make_shared<MsFemSingleDifference>();
       auto ms_cg_fem_diff = make_shared<MsCgFemDifference>();
       MultiLevelMonteCarlo::MLMC mlmc;
@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
       DSC_LOG_INFO_0 << "\nExpected " << value << endl;
       if(Dune::MPIHelper::getCollectiveCommunication().rank() == 0) {
         unique_ptr<boost::filesystem::ofstream> csvfile(
-            DSC::make_ofstream(DSC_CONFIG_GET("global.datadir", "data/") + string("/errors.csv")));
+            Dune::XT::Common::make_ofstream(DSC_CONFIG_GET("global.datadir", "data/") + string("/errors.csv")));
         map<string, double> csv{{"expectation", value}};
         const string sep(",");
         for (const auto& key_val : csv) {

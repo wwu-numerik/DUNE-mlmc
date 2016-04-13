@@ -21,13 +21,14 @@
 #include <dune/fem/mpimanager.hh>
 #endif
 
-#include <dune/stuff/common/ranges.hh>
+#include <dune/xt/common/ranges.hh>
 #include <dune/stuff/grid/walker/functors.hh>
 #include <dune/stuff/grid/walker/apply-on.hh>
-#include <dune/stuff/common/profiler.hh>
-#include <dune/stuff/common/logging.hh>
-#include <dune/stuff/common/configuration.hh>
-#include <dune/stuff/common/signals.hh>
+#include <dune/xt/common/timings.hh>
+#include <dune/xt/common/logging.hh>
+#include <dune/xt/common/configuration.hh>
+#include <dune/xt/common/signals.hh>
+#include <dune/xt/common/memory.hh>
 
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/weightedl2.hh>
@@ -89,7 +90,7 @@ void MultiLevelMonteCarlo::MsCgFemDifference::init(Dune::MPIHelper::MPICommunica
   if(init_called_)
     return;
 
-  problem_ = DSC::make_unique<DMP::ProblemContainer>(global, local, DSC_CONFIG);
+  problem_ = Dune::XT::Common::make_unique<DMP::ProblemContainer>(global, local, DSC_CONFIG);
   assert(problem_);
   init_called_ = true;
 }
@@ -117,7 +118,7 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
 
 double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
   using namespace Dune;
-  DSC::OutputScopedTiming tm("mlmc.difference_cg-msfem", DSC_LOG_INFO_0);
+  Dune::XT::Common::OutputScopedTiming tm("mlmc.difference_cg-msfem", DSC_LOG_INFO_0);
   assert(init_called_);
   assert(problem_);
   auto coarse_grid = Multiscale::make_coarse_grid(*problem_, local_comm_);
@@ -134,24 +135,24 @@ double MultiLevelMonteCarlo::MsCgFemDifference::eval() {
   std::unique_ptr<Multiscale::LocalsolutionProxy> msfem_solution(nullptr);
 
   Multiscale::LocalGridList localgrid_list(*problem_, coarse_space);
-  DSC::profiler().startTiming("mlmc.difference_cg-msfem.msfem-solve");
+  Dune::XT::Common::timings().start("mlmc.difference_cg-msfem.msfem-solve");
   Multiscale::Elliptic_MsFEM_Solver().apply(*problem_, coarse_space, msfem_solution,
                                             localgrid_list);
-  DSC::profiler().stopTiming("mlmc.difference_cg-msfem.msfem-solve");
+  Dune::XT::Common::timings().stop("mlmc.difference_cg-msfem.msfem-solve");
 
-  DSC::profiler().startTiming("mlmc.difference_cg-msfem.cgfem-solve");
+  Dune::XT::Common::timings().start("mlmc.difference_cg-msfem.cgfem-solve");
   Multiscale::Elliptic_FEM_Solver fem(*problem_, fine_grid);
   const auto &fine_fem_solution = fem.solve();
-  DSC::profiler().stopTiming("mlmc.difference_cg-msfem.cgfem-solve");
+  Dune::XT::Common::timings().stop("mlmc.difference_cg-msfem.cgfem-solve");
 
-  DSC::OutputScopedTiming tmd("mlmc.difference_cg-msfem.compute_inflow_difference", DSC_LOG_INFO_0);
+  Dune::XT::Common::OutputScopedTiming tmd("mlmc.difference_cg-msfem.compute_inflow_difference", DSC_LOG_INFO_0);
   return compute_inflow_difference(*coarse_grid, *msfem_solution,
                                    fine_grid, &fine_fem_solution);
 }
 
 double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
   using namespace Dune;
-  DSC::OutputScopedTiming tm("mlmc.single_msfem", DSC_LOG_INFO_0);
+  Dune::XT::Common::OutputScopedTiming tm("mlmc.single_msfem", DSC_LOG_INFO_0);
   assert(problem_);
 //  assert(init_called_);
   auto coarse_grid = Multiscale::make_coarse_grid(*problem_, local_comm_);
@@ -164,13 +165,13 @@ double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
   std::unique_ptr<Multiscale::LocalsolutionProxy> msfem_solution(nullptr);
 
   Multiscale::LocalGridList localgrid_list(*problem_, coarse_space);
-  DSC::profiler().startTiming("mlmc.single_msfem.msfem-solve");
+  Dune::XT::Common::timings().start("mlmc.single_msfem.msfem-solve");
   Multiscale::Elliptic_MsFEM_Solver().apply(*problem_, coarse_space, msfem_solution,
                                             localgrid_list);
-  DSC::profiler().stopTiming("mlmc.single_msfem.msfem-solve");
+  Dune::XT::Common::timings().stop("mlmc.single_msfem.msfem-solve");
 
 
-  DSC::OutputScopedTiming tmd("mlmc.single_msfem.compute_inflow_difference", DSC_LOG_INFO_0);
+  Dune::XT::Common::OutputScopedTiming tmd("mlmc.single_msfem.compute_inflow_difference", DSC_LOG_INFO_0);
   return compute_inflow_difference(*coarse_grid, *msfem_solution);
 }
 
@@ -178,11 +179,11 @@ double MultiLevelMonteCarlo::MsFemSingleDifference::eval() {
 void set_config_values(const std::vector<std::string> &keys,
                        const std::vector<std::string> &values) {
   assert(keys.size() == values.size());
-  for (const auto i : DSC::valueRange(keys.size()))
+  for (const auto i : Dune::XT::Common::value_range(keys.size()))
     DSC_CONFIG.set(keys[i], values[i], true);
 
   // should just be
-  // DSC::Config().add(DSC::Configuration(keys, values), "", true);
+  // Dune::XT::Common::Config().add(Dune::XT::Common::Configuration(keys, values), "", true);
 }
 
 void handle_sigterm(int) {
@@ -212,20 +213,21 @@ void MultiLevelMonteCarlo::msfem_init(int argc, char **argv) {
   set_config_values(keys, values);
 
   if (argc > 1 && boost::filesystem::is_regular_file(argv[1]))
-    DSC::Config().read_command_line(argc, argv);
+    Dune::XT::Common::Config().read_command_line(argc, argv);
 
-  DSC::testCreateDirectory(DSC_CONFIG_GET("global.datadir", "data/"));
+  Dune::XT::Common::test_create_directory(DSC_CONFIG_GET("global.datadir", "data/"));
 
   // LOG_NONE = 1, LOG_ERROR = 2, LOG_INFO = 4,LOG_DEBUG = 8,LOG_CONSOLE =
   // 16,LOG_FILE = 32
   // --> LOG_ERROR | LOG_INFO | LOG_DEBUG | LOG_CONSOLE | LOG_FILE = 62
-  DSC::Logger().create(DSC_CONFIG_GET("logging.level", 62),
+  Dune::XT::Common::Logger().create(DSC_CONFIG_GET("logging.level", 62),
                        DSC_CONFIG_GET("logging.file", std::string(argv[0]) + ".log"),
                        DSC_CONFIG_GET("global.datadir", "data"),
                        DSC_CONFIG_GET("logging.dir", "log" /*path below datadir*/));
   DSC_PROFILER.setOutputdir(DSC_CONFIG_GET("global.datadir", "data"));
   DS::threadManager().set_max_threads(DSC_CONFIG_GET("threading.max_count", 1));
-  DSC::installSignalHandler(SIGTERM, handle_sigterm);
+  Dune::XT::Common::threadManager().set_max_threads(DSC_CONFIG_GET("threading.max_count", 1));
+  Dune::XT::Common::install_signal_handler(SIGTERM, handle_sigterm);
 }
 
 
