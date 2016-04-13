@@ -28,6 +28,10 @@ include(DuneMacros)
 dune_project()
 
 
+dune_enable_all_packages(
+   INCLUDE_DIRS ${dune-mlmc}/dune
+)
+
 add_subdirectory(dune)
 add_subdirectory(cmake/modules)
 add_subdirectory(doc)
@@ -42,9 +46,6 @@ FILE( GLOB_RECURSE local_dune "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
 set( COMMON_HEADER ${local_header} ${local_dune} ${DUNE_HEADERS} )
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
-dune_enable_all_packages(
-   INCLUDE_DIRS ${dune-mlmc}/dune
-)
 
 add_executable("dune_mlmc" src/dune_mlmc.cc dune/mlmc/msfem.cc)
 

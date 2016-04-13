@@ -1,7 +1,7 @@
 # File for module specific CMake tests.
+
+# adding the respective flags would already have happened
+# in dune-multiscale. This is only to ensure FFTW was 
+# actually found there (where it is still optional if
+# multiscale is used solo)
 find_package(FFTW REQUIRED)
-if(FFTW_FOUND)
-	include_directories(${FFTW_INCLUDES})
-	set(HAVE_RANDOM_PROBLEM 1)
-	set(COMMON_LIBS ${COMMON_LIBS} fftw3_mpi ${FFTW_LIBRARIES})
-endif(FFTW_FOUND)
