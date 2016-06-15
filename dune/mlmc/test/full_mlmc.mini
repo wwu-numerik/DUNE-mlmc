@@ -1,0 +1,19 @@
+__name = full_mlmc_prob_{problem.name}
+
+[global]
+vtk_output = 0
+
+[problem]
+name = Random, Synthetic | expand
+
+[grids]
+macro_cells_per_dim = 4
+micro_cells_per_macrocell_dim = 4
+
+[msfem]
+oversampling_layers = 0
+fem_comparison = 0
+
+
+[threading]
+max_count = 1
