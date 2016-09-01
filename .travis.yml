@@ -33,7 +33,9 @@ before_install:
     : ${OPTS:="config.opts/travis.ninja"} && export OPTS
   - |-
     : ${BUILD_CMD:="ninja -k 10000 -j 2"} && export BUILD_CMD
-  # workaround for https://github.com/travis-ci/travis-ci/issues/5285
+  # workaround for gnutls bug is using git built against curl-openssl
+  - sudo -E rm /etc/apt/sources.list.d/*git*.list
+  - sudo -E add-apt-repository -y ppa:pymor/travis && sudo -E aptitude update && sudo -E aptitude install git -y
   - sudo -E apt-get install -y -q libtbb-dev python-pip libmetis-dev python3-pip libfftw3-mpi-dev libfftw3-bin libfftw3-dev libopenmpi-dev openmpi-bin
   - sudo -E pip3 install virtualenv cpp-coveralls
   - sudo -E pip install virtualenv cpp-coveralls
@@ -98,10 +100,10 @@ cache:
 
 env:
   global:
-    - MY_MODULE=dune-mlmc 
-    - DUNE_BUILD_DIR=${HOME}/dune_build/ 
-    - INSTALL_DIR=$HOME/dune 
-    - CTEST_OUTPUT_ON_FAILURE=1 
+    - MY_MODULE=dune-mlmc
+    - DUNE_BUILD_DIR=${HOME}/dune_build/
+    - INSTALL_DIR=$HOME/dune
+    - CTEST_OUTPUT_ON_FAILURE=1
     - MODULES_TO_DELETE=""
     - GCCDEFAULT=4.9
     - LIBRARY_PATH=/usr/lib
@@ -150,5 +152,5 @@ matrix:
           packages:
           - *commonpackages
           - ['clang-3.7']
-      env: OPTS=config.opts/travis.make BUILD_CMD="make -k -j2" CXX=clang++-3.7 CC=clang-3.7 
+      env: OPTS=config.opts/travis.make BUILD_CMD="make -k -j2" CXX=clang++-3.7 CC=clang-3.7
 
