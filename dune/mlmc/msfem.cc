@@ -110,10 +110,16 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
   Multiscale::MsFEMProjection::project(
         msfem_solution, projected_msfem_solution);
   const auto coarse_flow = surface_flow_gdt(coarse_grid, projected_msfem_solution, *problem_);
+
   if(fine_function && fine_grid) {
     const auto fine_flow = surface_flow_gdt(*fine_grid, *fine_function, *problem_);
+
+    //fine_function->visualize("fine_sol");
+    //projected_msfem_solution.visualize("proj_msfem_sol");
+
     return coarse_flow - fine_flow;
   }
+
   return coarse_flow;
 }
 
@@ -213,9 +219,13 @@ void MultiLevelMonteCarlo::msfem_init(int argc, char **argv) {
   const vector<string> values{"8", "12", "1", "Random"};
   set_config_values(keys, values);
 
-  if (argc > 1 && boost::filesystem::is_regular_file(argv[1]))
-    Dune::XT::Common::Config().read_command_line(argc, argv);
+  //if (argc > 1 && boost::filesystem::is_regular_file(argv[1]))
+  //  Dune::XT::Common::Config().read_command_line(argc, argv);
 
+  if (argc > 1 ) {
+      Dune::XT::Common::Config().read_command_line(argc, argv);
+      Dune::Stuff::Common::Config().read_command_line(argc, argv);
+  }
   Dune::XT::Common::test_create_directory(DXTC_CONFIG_GET("global.datadir", "data/"));
 
   // LOG_NONE = 1, LOG_ERROR = 2, LOG_INFO = 4,LOG_DEBUG = 8,LOG_CONSOLE =
