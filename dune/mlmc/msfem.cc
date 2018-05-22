@@ -117,7 +117,7 @@ double MultiLevelMonteCarlo::MsCgFemDifference::compute_inflow_difference(const 
     //fine_function->visualize("fine_sol");
     //projected_msfem_solution.visualize("proj_msfem_sol");
 
-    return coarse_flow - fine_flow;
+    return fine_flow - coarse_flow;
   }
 
   return coarse_flow;
