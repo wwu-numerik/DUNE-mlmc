@@ -15,6 +15,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <dune/stuff/common/exceptions.hh>
+#include <dune/xt/common/configuration.hh>
 
 /// \file Environment for computing expected values by the Multi Level
 /// Monte Carlo approach. For each level you have to provide extensions
@@ -163,6 +164,9 @@ public:
   /// Return number of processors per group.
   int procs() const { return _p; }
 
+  int totalRepetitions() const { return _N * _g; }
+  int doneRepetitions() const { return _n * _g; }
+
   /// Evaluate difference.
   double eval() { return _diff->eval(); }
 
@@ -222,7 +226,7 @@ public:
     std::fstream fs;
     if (rank == 0) {
       duration = MPI_Wtime();
-      ss << "out" << size << ".dat";
+      ss << DXTC_CONFIG_GET("global.datadir", "data/") << "/mlmc" << size << ".txt";
       fs.open(ss.str(), std::fstream::out);
     }
     // XXX
@@ -233,9 +237,10 @@ public:
     check(nBreak > 1, "nBreak must be greater than 1.");
 
     // Create groups and communicators for different levels.
+    int startRepititions = DXTC_CONFIG_GET("mlmc.start_repititions", 16);
     for (int i = 0; i < nLevel; ++i) {
-      _level[i].setRepetitions(6 * nBreak); // TODO: better
       _level[i].assignProcessors(world);
+      _level[i].setRepetitions(startRepititions / _level[i].groups());
     }
 
     // Loop over breaks and levels
@@ -293,9 +298,15 @@ public:
 
       // XXX fs -> std::cout
       if (rank == 0) {
-        fs << "Break " << iBreak;
+        fs << "Break: " << iBreak << "\n";
         for (int i = 0; i < nLevel; ++i)
-          fs << ", lev" << i << " " << _level[i].getRepetitions();
+          fs << "\tL: " << i 
+             << "\tn: " << _level[i].doneRepetitions()
+             << "\tN: " << _level[i].totalRepetitions()
+             << "\tQ: " << _level[i].mean()
+             << "\tV: " << _level[i].var()
+             << "\tt: " << _level[i].time()
+             << "\n";
         fs << "\n";
         // XXX
       }
