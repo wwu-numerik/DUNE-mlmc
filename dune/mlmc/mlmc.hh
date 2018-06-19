@@ -240,7 +240,8 @@ public:
     int startRepititions = DXTC_CONFIG_GET("mlmc.start_repititions", 16);
     for (int i = 0; i < nLevel; ++i) {
       _level[i].assignProcessors(world);
-      _level[i].setRepetitions(startRepititions / _level[i].groups());
+      fs << "procs: " << _level[i].procs() << " groups: " << _level[i].groups() << "\n";
+      _level[i].setRepetitions(std::max(nBreak, startRepititions / _level[i].groups()));
     }
 
     // Loop over breaks and levels
