@@ -67,7 +67,7 @@ double surface_flow_gdt(const Dune::Multiscale::CommonTraits::GridType &grid,
     // Loop over interfaces
     const auto local_solution = solution.local_function(*iCell);
     for(iFace = gv.ibegin(*iCell); iFace != gv.iend(*iCell); ++iFace) {
-      if(iFace->boundary() && iFace->geometry().center()[0]==0) {
+      if(iFace->boundary() && abs(iFace->geometry().center()[0]) < 1e-10) {
         double area = iFace->geometry().volume();
         // Loop over gauss points
         for(auto iGauss = rule.begin(); iGauss != rule.end(); ++iGauss) {

@@ -109,7 +109,9 @@ public:
     range[0][2] = _p;
     MPI_Group_range_incl(all, 1, range, &masters);
     MPI_Comm_create(world, masters, &_masters);
-    _isMaster = (rank % _p) == 0;
+    int grank;
+    MPI_Comm_rank(_group, &grank);
+    _isMaster = grank == 0;
   }
 
   /// Sets number of repetitions.
@@ -156,7 +158,7 @@ public:
   double var() const { return _sumX2 / (_n * _g) - mean() * mean(); }
 
   /// Returns average time of repetition on present level.
-  double time() const { return _T / _n; }
+  double time() const { return _T / (_n *  _g); }
 
   /// Returns number of groups on present level.
   int groups() const { return _g; }
@@ -203,10 +205,10 @@ public:
     double alpha = 0;
     int n = _level.size();
     for (int i = 0; i < n; ++i)
-      alpha += sqrt(_level[i].time() * _level[i].var() / _level[i].groups());
+      alpha += sqrt(_level[i].time() * _level[i].var());
     alpha /= tol * tol;
     for (int i = 0; i < n; ++i)
-      _level[i].setRepetitions(ceil(alpha * sqrt(_level[i].var() / (_level[i].time() * _level[i].groups()))));
+      _level[i].setRepetitions(ceil(alpha * sqrt(_level[i].var() / _level[i].time()) / _level[i].groups()));
   }
 
   /// Computes the expected value of a scalar random variable up to a given
@@ -240,58 +242,39 @@ public:
     int startRepititions = DXTC_CONFIG_GET("mlmc.start_repititions", 16);
     for (int i = 0; i < nLevel; ++i) {
       _level[i].assignProcessors(world);
-      fs << "procs: " << _level[i].procs() << " groups: " << _level[i].groups() << "\n";
-      _level[i].setRepetitions(std::max(nBreak, startRepititions / _level[i].groups()));
+      _level[i].setRepetitions(std::max(nBreak, nBreak * startRepititions / _level[i].groups()));
     }
 
     // Loop over breaks and levels
     for (int iBreak = 1; iBreak <= nBreak; ++iBreak) {
       for (int iLevel = 0; iLevel < nLevel; ++iLevel) {
-
         // Moments of groups.
         Level& l = _level[iLevel];
+        MPI_Comm masters = l.getMasters();
+        MPI_Comm group = l.getGroup();
+
         int n = l.nextRepetitions(iBreak, nBreak);
         if (n <= 0)
           continue;
-        double grpSumX = 0;
-        double grpSumX2 = 0;
-        double grpT = MPI_Wtime();
+
+        double gdata[3] = {0};
+        gdata[2] = MPI_Wtime();
         for (int i = 0; i < n; ++i) {
-          const double x = l.eval();
-          grpSumX += x;
-          grpSumX2 += x * x;
+          double x = l.eval();
+          gdata[0] += x;
+          gdata[1] += x * x;
         }
-        grpT = MPI_Wtime() - grpT;
+        gdata[2] = MPI_Wtime() - gdata[2];
 
-        if (rank == 0) {
-          // XXX fs -> std::cout
-          fs << "Level " << iLevel << ": " << grpT / n << " s per repetition \n"; // XXX
-        }
-
-        // Accumulate group results.
-        double sumX = 0;
-        double sumX2 = 0;
-        double T = 0;
-        MPI_Comm masters = l.getMasters();
-        MPI_Comm group = l.getGroup();
-        // Accumulate within groups
-        MPI_Reduce(&grpSumX, &sumX, 1, MPI_DOUBLE, MPI_SUM, 0, group);
-        MPI_Reduce(&grpSumX2, &sumX2, 1, MPI_DOUBLE, MPI_SUM, 0, group);
-        MPI_Reduce(&grpT, &T, 1, MPI_DOUBLE, MPI_SUM, 0, group);
+        double data[3];
         // Accumulate over group masters
         if (l.isMaster()) {
-          MPI_Allreduce(&grpSumX, &sumX, 1, MPI_DOUBLE, MPI_SUM, masters);
-          MPI_Allreduce(&grpSumX2, &sumX2, 1, MPI_DOUBLE, MPI_SUM, masters);
-          MPI_Allreduce(&grpT, &T, 1, MPI_DOUBLE, MPI_SUM, masters);
-          T /= l.groups() * l.procs();
+          MPI_Allreduce(gdata, data, 3, MPI_DOUBLE, MPI_SUM, masters);
         }
         // Distribute master results over groups
-        MPI_Bcast(&sumX, 1, MPI_DOUBLE, 0, group);
-        MPI_Bcast(&sumX2, 1, MPI_DOUBLE, 0, group);
-        MPI_Bcast(&T, 1, MPI_DOUBLE, 0, group);
-
+        MPI_Bcast(data, 3, MPI_DOUBLE, 0, group);
         // Update moments.
-        l.update(n, sumX, sumX2, T);
+        l.update(n, data[0], data[1], data[2]);
       }
 
       // Compute optimal number of repetitions per algorithm.
@@ -304,11 +287,13 @@ public:
           fs << "\tL: " << i 
              << "\tn: " << _level[i].doneRepetitions()
              << "\tN: " << _level[i].totalRepetitions()
+             << "\tg: " << _level[i].groups()
              << "\tQ: " << _level[i].mean()
              << "\tV: " << _level[i].var()
              << "\tt: " << _level[i].time()
              << "\n";
         fs << "\n";
+        fs.flush();
         // XXX
       }
     }
